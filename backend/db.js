@@ -1,8 +1,8 @@
-const mongooose=require('mongoose');
+const mongoose=require('mongoose');
 require('dotenv').config();
-const localMongo=process.env.LOCALMONGO;
-mongooose.connect(localMongo);
-const db= mongoose.connetion;
+const localMongo='mongodb://127.0.0.1:27017/HostelMaintainence';
+mongoose.connect(localMongo);
+const db= mongoose.connection;
 
 db.on('connected',()=>{
   console.log(`database connected successfully`);

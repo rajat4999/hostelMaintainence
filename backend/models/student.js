@@ -23,7 +23,7 @@ const studentSchema=new mongoose.Schema({
   },
   hostel:{
     type: String,
-    enum: ['SVBH','patel','tilak','tondon','NBH Block-A','NBH Block-B','NBH Block-B','malviya'],
+    enum: ['SVBH','Patel','Tilak','Tondon','NBH Block-A','NBH Block-B','NBH Block-C','Malviya'],
     required :true
   },
   room:{
@@ -40,6 +40,11 @@ const studentSchema=new mongoose.Schema({
       },
       message: props=>`{$props.value} is not a valid number`
     }
+  },
+  role:{
+    type: String,
+    enum:['Student','Caretaker'],
+    required:true
   }
 });
 
