@@ -44,4 +44,4 @@ const studentSchema=new mongoose.Schema({
 });
 
 const student=mongoose.model('student',studentSchema);
-model.exports=student;
+module.exports=student;
