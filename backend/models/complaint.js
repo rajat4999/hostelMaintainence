@@ -1,7 +1,7 @@
-const mongooose=require('mongoose');
+const mongoose=require('mongoose');
 const complaintSchema=new mongoose.Schema({
   student:{
-    type:mongooose.Schema.Types.ObjectId,
+    type:mongoose.Schema.Types.ObjectId,
     ref:'student',
     required:true
   },
@@ -26,7 +26,7 @@ const complaintSchema=new mongoose.Schema({
   },
   date:{
     type:Date,
-    default:Date.now
+    default:Date.now()
   },
   status:{
     type:String,

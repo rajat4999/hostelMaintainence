@@ -1,8 +1,9 @@
 const express= require('express');
 const mongoose=require('mongoose');
-const { validate } = require('../../../projects/demo/models/Person');
+// const { validate } = require('../../../projects/demo/models/Person');
+const bcrypt=require('bcrypt');
 const studentSchema=new mongoose.Schema({
-  college_email:{
+  email:{
     type: String,
     required: true,
     unique:true
@@ -10,11 +11,10 @@ const studentSchema=new mongoose.Schema({
   password:{
     type: String,
     required: true,
-    select: false
+    // select: false
   },
   regNo:{
     type: String,
-    required: true,
     unique:true
   },
   name:{
@@ -44,9 +44,37 @@ const studentSchema=new mongoose.Schema({
   role:{
     type: String,
     enum:['Student','Caretaker'],
+    default:'Student',
     required:true
   }
 });
+
+
+// hashing
+studentSchema.pre('save',async function(){
+  const student=this;
+  if(!this.isModified('password')) return;
+  try{
+    const salt=await bcrypt.genSalt(10);
+    const hashedPassword=await bcrypt.hash(this.password,salt);
+    this.password=hashedPassword
+  }
+  catch(err){
+    throw err;
+  }
+});
+
+studentSchema.methods.comparePassword=async function(password){
+  try{
+    const isMatch=await bcrypt.compare(password,this.password);
+    return isMatch;
+  }
+  catch(err){
+    throw err;
+  }
+}
+
+
 
 const student=mongoose.model('student',studentSchema);
 module.exports=student;
