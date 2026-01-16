@@ -4,6 +4,7 @@ const db=require('./db');
 const bodyParser=require('body-parser');
 const authRoutes=require('./routes/authRoutes');
 const studentRoutes=require('./routes/studentRoutes');
+const complaintRoutes=require('./routes/complaintRoutes');
 
 
 
@@ -19,6 +20,7 @@ app.get('/',(req,res)=>{
 
 app.use('/auth',authRoutes);
 app.use('/student',studentRoutes);
+app.use('/caretaker',complaintRoutes);
 
 const port=process.env.PORT || 3000;
 app.listen(port,()=>{

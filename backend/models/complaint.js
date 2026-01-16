@@ -22,24 +22,41 @@ const complaintSchema=new mongoose.Schema({
   location:{
     type:String,
     trim:true,
-    required:()=> {return this.isCommon==true}
-  },
-  date:{
-    type:Date,
-    default:Date.now()
+    required:function() {return this.isCommon==true}
   },
   status:{
     type:String,
-    enum:['pending','worker assigned','resolved'],
+    enum:['pending','assigned','resolved'],
     default:'pending'
-  },
-  resolvedOn:{
-    type:Date
   },
   image:{
     type:String  //url of image
-  }
-});
+  },
+  hostel:{
+    type:String,
+    required:true
+  },
+  workerName:{
+    type:String
+  },
+  workerMob:{
+    type:String,
+    validate:{
+      validator: (v)=>{
+        return /^[6-9]\d{9}$/.test(v);
+      },
+      message: props=>`${props.value} is not a valid number`
+    }
+  },
+  assignAt:{
+    type:Date
+  },
+  resolvedAt:{
+    type:Date
+  },
+  reopenReason:{type:String},
+  reopenedAt:{type:Date}
+},{timestamps:true});
 
 const complaint=mongoose.model('complaint',complaintSchema);
 module.exports=complaint;

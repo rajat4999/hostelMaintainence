@@ -15,7 +15,9 @@ const studentSchema=new mongoose.Schema({
   },
   regNo:{
     type: String,
-    unique:true
+    unique:true,
+    required:function(){return this.role=='Student'}
+
   },
   name:{
     type: String,
@@ -28,7 +30,7 @@ const studentSchema=new mongoose.Schema({
   },
   room:{
     type: String,
-    required:true
+    required:function(){return this.role=='Student'}
   },
   mobNo: {
     type: String,

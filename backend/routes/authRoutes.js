@@ -1,5 +1,6 @@
 const {jwtAuthMiddleware,generateToken}=require('./../jwt');
 const student= require('./../models/student');
+const sendEmail=require('./../services/emailService');
 const express=require('express');
 const router=express.Router();
 
@@ -10,10 +11,18 @@ router.post('/signup',async(req,res)=>{
     const user=new student(userData);
     const response=await user.save();
 
+    // email notification
+    const subject="welcome to hostel maintenance app";
+    const to=user.email;
+    const text=`Hi ${user.name},\n\nYour account has been successfully created.\n\nHostel: ${user.hostel}\nRoom: ${user.room}\n\nYou can now login and file complaints.\n\nRegards,\nHostel Admin`;
+
+    await sendEmail(to,subject,text);
+
     const payload={
-      regNo:user.regNo,
+      email:user.email,
       role:user.role,
-      id:user.id
+      id:user.id,
+      hostel:user.hostel
     }
     
     const token=generateToken(payload);
@@ -25,6 +34,7 @@ router.post('/signup',async(req,res)=>{
 
   }
   catch(err){
+    console.log(err);
     res.status(500).json({error:err});
   }
 });
@@ -41,7 +51,8 @@ router.post('/login',async(req,res)=>{
     const payload={
       email:user.email,
       role:user.role,
-      id:user.id
+      id:user.id,
+      hostel:user.hostel
     }
 
     const token=generateToken(payload);

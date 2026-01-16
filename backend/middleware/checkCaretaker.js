@@ -1,0 +1,11 @@
+const checkCaretaker=async (req,res,next)=>{
+    try{
+      if(req.user.role!=='Caretaker') return res.status(403).json({error:"access denied"});
+      next();
+    }
+    catch(err){
+      res.status(500).json({error:"internal server error"});
+    }
+}
+
+module.exports=checkCaretaker;
