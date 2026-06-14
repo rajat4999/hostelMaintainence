@@ -2,7 +2,7 @@ const student= require('./../models/student');
 const complaint=require('./../models/complaint');
 const notice=require('./../models/notice');
 const sendEmail=require('./../services/emailService');
-const { uploadToCloudinary } = require('../config/cloudinary');
+const { uploadToCloudinary,deleteFromCloudinary } = require('../config/cloudinary');
 const worker=require('./../models/worker');
 
 
@@ -57,6 +57,12 @@ const deleteWorker=async(workerId)=>{
   if (workerData.activeTaskCount > 0) {
     throw { statusCode: 400, message: "Cannot delete a worker with active tasks. Please wait for them to finish or reassign their tasks first." };
   }
+
+  if (workerData.image) {
+      await deleteFromCloudinary(workerData.image);
+  }
+
+
   await worker.findByIdAndDelete(workerId);    
   return { message: "Worker deleted successfully" } ;
 }
@@ -64,14 +70,17 @@ const deleteWorker=async(workerId)=>{
 // update worker data
 const updateWorker=async(workerId,updateData)=>{
 
-  // If caretaker uploaded a NEW photo during edit
+  const existingWorker = await worker.findById(workerId);
+  if (!existingWorker) throw { statusCode: 404, message: "Worker not found" };
+
   if (updateData.photoBase64) {
+    if (existingWorker.image) {
+        await deleteFromCloudinary(existingWorker.image);
+    }
     updateData.image = await uploadToCloudinary(updateData.photoBase64, 'worker_profiles');
   }
 
   const updatedWorker = await worker.findByIdAndUpdate(workerId, updateData, { new: true });
-  if (!updatedWorker) throw { statusCode: 404, message: "Worker not found" };
-
   return { message: "Worker updated", worker: updatedWorker };
 }
 
@@ -215,8 +224,15 @@ const viewNotices=async(caretakerId)=>{
 
 // delete notice
 const deleteNotice=async(noticeId)=>{
-  const response=await notice.findByIdAndDelete(noticeId);
-  if(!response) return { error: "notice not found" };
+  const noticeData = await notice.findById(noticeId);
+  if (!noticeData) return { error: "notice not found" };
+
+  if (noticeData.image) {
+      await deleteFromCloudinary(noticeData.image);
+  }
+
+  await notice.findByIdAndDelete(noticeId);
+
   return { message: "notice deleted successfully" };
 }
 

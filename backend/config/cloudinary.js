@@ -28,4 +28,25 @@ const uploadToCloudinary = (fileBuffer, folderName = 'hostel_assets') => {
   });
 };
 
-module.exports = { cloudinary, uploadToCloudinary };
+
+const deleteFromCloudinary = async (imageUrl) => {
+  try {
+    if (!imageUrl) return;
+
+  
+
+
+    const urlParts = imageUrl.split('/');
+    const folder = urlParts[urlParts.length - 2];
+    const file = urlParts[urlParts.length - 1].split('.')[0];
+    const publicId = `${folder}/${file}`;
+
+    await cloudinary.uploader.destroy(publicId);
+    console.log(`Successfully deleted ${publicId} from Cloudinary`);
+    
+  } catch (error) {
+    console.error("Cloudinary Deletion Error:", error);
+  }
+};
+
+module.exports = { cloudinary, uploadToCloudinary, deleteFromCloudinary};

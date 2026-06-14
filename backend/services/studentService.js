@@ -1,6 +1,6 @@
 const student= require('./../models/student');
 const sendEmail=require('./../services/emailService');
-const { uploadToCloudinary } = require('../config/cloudinary');
+const { uploadToCloudinary,deleteFromCloudinary } = require('../config/cloudinary');
 const complaint=require('./../models/complaint');
 const notice=require('./../models/notice');
 
@@ -156,6 +156,8 @@ const updateProfile = async (studentId, updateData) => {
   return user;
 };
 
+// withdraw complain
+
 
 const withdrawComplaint = async (studentId, compId) => {
   const comp = await complaint.findOne({ _id: compId, student: studentId });
@@ -164,6 +166,10 @@ const withdrawComplaint = async (studentId, compId) => {
   
   if (comp.status !== 'pending') {
       throw { statusCode: 403, message: "You can only withdraw complaints that are still pending." };
+  }
+
+  if (comp.image) {
+     await deleteFromCloudinary(comp.image);
   }
 
   await complaint.findByIdAndDelete(compId);
