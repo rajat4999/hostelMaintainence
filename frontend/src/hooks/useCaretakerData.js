@@ -124,6 +124,28 @@ export const useCaretakerData = () => {
     }
   };
 
+  const toggleWorkerAvailability = async (workerId, currentStatus) => {
+    const newStatus = !currentStatus;
+    
+    try {
+      // 1. Instantly update the UI so the switch feels snappy
+      setWorkers(prevWorkers => 
+        prevWorkers.map(w => w._id === workerId ? { ...w, isAvailable: newStatus } : w)
+      );
+
+      // 2. Tell the backend (Reusing your existing PUT route!)
+      await api.put(`/caretaker/worker/${workerId}`, { isAvailable: newStatus });
+      toast.success(newStatus ? "Worker marked as On Duty" : "Worker marked as Off Duty");
+      
+    } catch (err) {
+      // Revert if API fails
+      setWorkers(prevWorkers => 
+        prevWorkers.map(w => w._id === workerId ? { ...w, isAvailable: currentStatus } : w)
+      );
+      toast.error("Failed to update availability");
+    }
+  };
+
   const deleteWorker = async (workerId) => {
     try {
       await api.delete(`/caretaker/worker/${workerId}`);
@@ -134,9 +156,22 @@ export const useCaretakerData = () => {
     }
   };
 
+
+  const rejectComplaint = async (compId, reason) => {
+    try {
+      await api.patch(`/caretaker/${compId}/reject`, {reason} );
+      
+      toast.success("Complaint rejected successfully");
+      fetchDashboardData();
+      
+    } catch (error) {
+      toast.error(error.response?.data?.error || "Failed to reject complaint");
+    }
+  };
+
   return {
     user, // <--- Export user
     complaints, workers, notices, stats, loading,
-    assignWorker, resolveComplaint, addWorker, postNotice, deleteNotice, logout,updateWorker, deleteWorker
+    assignWorker, resolveComplaint, addWorker, postNotice, deleteNotice, logout,updateWorker, deleteWorker,rejectComplaint,toggleWorkerAvailability
   };
 };

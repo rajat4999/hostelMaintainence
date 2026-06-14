@@ -12,6 +12,7 @@ router.use(jwtAuthMiddleware,checkCaretaker);
 router.get('/view-all', ComplaintController.viewAllComplaints);
 router.patch('/:compId/assign', ComplaintController.assignWorker);
 router.patch('/:compId/resolve', ComplaintController.resolveComplaint);
+router.patch('/:compId/reject', ComplaintController.rejectComplaint);
 
 // Workers
 router.post('/add-worker', ComplaintController.addWorker);

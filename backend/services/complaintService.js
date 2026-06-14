@@ -12,7 +12,7 @@ const getAllComplaints=async(caretakerId)=>{
   const ct=await student.findById(caretakerId);
   if(!ct)throw { statusCode: 404, message: 'token expired' };
   const hostel=ct.hostel;
-  const complaints=await complaint.find({hostel:hostel}).populate('student','name room hostel mobNo').populate('worker').sort({createdAt:-1});
+  const complaints=await complaint.find({hostel:hostel}).populate('student','name room hostel mobNo regNo email').populate('worker').sort({createdAt:-1});
 
   complaints.sort((a,b)=>{
     if(a.status==='pending'  && b.status!=='pending') return -1;
@@ -50,8 +50,14 @@ const addWorker=async(caretakerId,workerData)=>{
 // delete worker
 
 const deleteWorker=async(workerId)=>{
-  const deletedWorker = await worker.findByIdAndDelete(workerId);
-  if (!deletedWorker) throw { statusCode: 404, message: "Worker not found" };      
+
+  const workerData = await worker.findById(workerId);
+  if (!workerData) throw { statusCode: 404, message: "Worker not found" };
+
+  if (workerData.activeTaskCount > 0) {
+    throw { statusCode: 400, message: "Cannot delete a worker with active tasks. Please wait for them to finish or reassign their tasks first." };
+  }
+  await worker.findByIdAndDelete(workerId);    
   return { message: "Worker deleted successfully" } ;
 }
 
@@ -83,7 +89,7 @@ const viewWorkersByCategory=async(caretakerId,category)=>{
     filter.category=category;
   }
 
-  const workers=await worker.find(filter);
+  const workers=await worker.find(filter).sort({activeTaskCount:1});
   return workers;
 
 
@@ -104,13 +110,24 @@ const assignWorkerToComplaint=async(caretakerId,complaintId,workerId)=>{
   const workers=await worker.findById(workerId);
   if(!workers) throw { statusCode: 404, message: "worker not found" };
 
-  if(comp.status==='assigned') throw { statusCode: 400, message: "worker already assigned" };
-  if(comp.status==='resolved') throw { statusCode: 400, message: "complaint already resolved" };
-  comp.status='assigned';
-  comp.worker = workerId;
-  comp.assignAt=new Date();
+  if (comp.category !== workers.category) {
+    throw { statusCode: 400, message: "Worker skill category does not match the complaint category." };
+  }
 
-  await comp.save();
+  const compl = await complaint.findOneAndUpdate(
+    { _id: complaintId, status: 'pending' }, 
+    { status: 'assigned', worker: workerId, assignAt: new Date() },
+    { new: true }
+  ).populate('student');
+
+  if (!compl) {
+    throw { 
+      statusCode: 409, // 409 means Conflict
+      message: "Race condition prevented! Another caretaker assigned this complaint just moments ago." 
+    };
+  }
+  workers.activeTaskCount += 1;
+  await workers.save();
 
   try{
     // email notification
@@ -142,6 +159,10 @@ const resolveComplaint=async(complaintId)=>{
   comp.status='resolved';
   comp.resolvedAt=new Date();
   await comp.save();
+
+  if (comp.worker) {
+    await worker.findByIdAndUpdate(comp.worker, { $inc: { activeTaskCount: -1 } });
+  }
 
   try{
     // email notification
@@ -209,7 +230,37 @@ const getCaretakerProfile=async(user)=>{
     mobNo: user.mobNo 
   });
 
-}
+};
+
+// reject complaint
+
+const rejectComplaint = async (compId, reason) => {
+  if (!reason) throw { statusCode: 400, message: "A reason is required to reject a complaint." };
+
+  const comp = await complaint.findById(compId).populate('student');
+  if (!comp) throw { statusCode: 404, message: "Complaint not found." };
+
+  // Security Lock: Prevent rejecting a complaint that is already finished
+  if (comp.status === 'resolved' || comp.status === 'rejected') {
+      throw { statusCode: 400, message: `This complaint is already marked as ${comp.status}.` };
+  }
+
+  // Update the state
+  comp.status = 'rejected';
+  comp.rejectReason = reason;
+  await comp.save();
+
+  if (comp.worker) {
+    await worker.findByIdAndUpdate(comp.worker, { $inc: { activeTaskCount: -1 } });
+  }
+
+  // Async Email Notification to the Student
+  const subject = `Update: Complaint Rejected`;
+  const text = `Hello ${comp.student.name},\n\nYour complaint regarding "${comp.title}" has been REJECTED by the Caretaker.\n\nReason: ${reason}\n\nIf you believe this is an error, please visit the Caretaker office.\n\nRegards,\nHostel Management`;
+  sendEmail(comp.student.email, subject, text).catch(console.error);
+
+  return { message: "Complaint rejected successfully", comp };
+};
 
 
 
@@ -224,6 +275,7 @@ module.exports={
   uploadNotice,
   viewNotices,
   deleteNotice,
-  getCaretakerProfile
+  getCaretakerProfile,
+  rejectComplaint
 }
 

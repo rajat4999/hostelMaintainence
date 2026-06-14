@@ -44,10 +44,7 @@ const updateWorker=async(req,res)=>{
   try{
     const workerId=req.params.id;
     let updateData = {
-      name: req.body.name,
-      mobNo: req.body.mobNo,
-      category: req.body.category,
-      photoBase64: req.body.photoBase64
+      ...req.body
     };
 
     const response = await ComplaintService.updateWorker(workerId, updateData);
@@ -148,6 +145,22 @@ const getCaretakerProfile=async(req,res)=>{
   }
 };
 
+
+// reject complaint
+
+const rejectComplaint = async (req, res) => {
+  try {
+    const { compId } = req.params;
+    const { reason } = req.body;
+    
+    const result = await ComplaintService.rejectComplaint(compId, reason);
+    res.status(200).json(result);
+  } catch (err) {
+    res.status(err.statusCode || 500).json({ error: err.message });
+  }
+};
+
+
 module.exports={
   viewAllComplaints,
   addWorker,
@@ -159,7 +172,8 @@ module.exports={
   uploadNotice,
   viewNotices,
   deleteNotice,
-  getCaretakerProfile
+  getCaretakerProfile,
+  rejectComplaint
 };
 
 

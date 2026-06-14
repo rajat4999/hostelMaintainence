@@ -71,11 +71,24 @@ const updateProfile = async (req, res) => {
   }
 };
 
+
+// withdraw complaint 
+const withdrawComplaint = async (req, res) => {
+  try {
+    const result = await StudentService.withdrawComplaint(req.user.id, req.params.compId);
+    res.status(200).json(result);
+  } catch (err) {
+    res.status(err.statusCode || 500).json({ error: err.message });
+  }
+};
+
+
 module.exports = {
   fileComplaint,
   getStudentComplaints,
   reopenComplaint,
   viewNotices,
   getProfile,
-  updateProfile
+  updateProfile,
+  withdrawComplaint
 };

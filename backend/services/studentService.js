@@ -55,9 +55,10 @@ const getStudentComplaints = async (studentId) => {
   const comps=await complaint.find({
     $or:[
       {student:studentId},
-      {isCommon:true}
+      {isCommon:true,hostel: user.hostel}
     ]
-  }).populate('worker')
+  }).populate('student', 'name room')
+  .populate('worker')
   .sort({createdAt:-1});
   return comps;
 
@@ -129,6 +130,22 @@ const getProfile = async (studentId) => {
 const updateProfile = async (studentId, updateData) => {
   const user=await student.findById(studentId);
   if(!user) throw { statusCode: 404, message: 'token expired' };
+
+  if (updateData.room || updateData.hostel) {
+    const activeComplaints = await complaint.find({
+      student: studentId,
+      isCommon: false, // Ensure it's a personal complaint
+      status: { $in: ['pending', 'assigned'] }
+    });
+
+    if (activeComplaints.length > 0) {
+      throw { 
+        statusCode: 400, 
+        message: 'Cannot change room or hostel with active personal complaints. Please wait for them to be resolved or withdraw them.' 
+      };
+    }
+  }
+
   const allowedFields=['name','mobNo','hostel','room'];
   for(let key in updateData){
     if(allowedFields.includes(key)){
@@ -137,7 +154,22 @@ const updateProfile = async (studentId, updateData) => {
   }
   await user.save();
   return user;
-}
+};
+
+
+const withdrawComplaint = async (studentId, compId) => {
+  const comp = await complaint.findOne({ _id: compId, student: studentId });
+  
+  if (!comp) throw { statusCode: 404, message: "Complaint not found." };
+  
+  if (comp.status !== 'pending') {
+      throw { statusCode: 403, message: "You can only withdraw complaints that are still pending." };
+  }
+
+  await complaint.findByIdAndDelete(compId);
+  
+  return { message: "Complaint permanently withdrawn and deleted." };
+};
 
 
 module.exports={
@@ -146,5 +178,6 @@ module.exports={
   reopenComplaint,
   viewNotices,
   getProfile,
-  updateProfile
+  updateProfile,
+  withdrawComplaint
 };

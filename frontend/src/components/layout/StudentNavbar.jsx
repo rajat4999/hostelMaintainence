@@ -24,7 +24,8 @@ const StudentNavbar = ({ user, notifications, onLogout, onOpenProfile }) => {
 
   return (
     <nav className="bg-white shadow-sm px-6 md:px-8 py-4 flex justify-between items-center sticky top-0 z-20">
-      <h1 className="text-2xl font-extrabold text-blue-700 tracking-tight">Samadhan Desk</h1>
+      <h1 className="text-2xl font-extrabold text-blue-700 tracking-tight">Samadhan Setu </h1>
+      <h3 className="text-2xl font-extrabold text-blue-700 tracking-tight">Student Panel </h3>
       
       <div className="flex items-center gap-6">
         {/* Notification Bell */}

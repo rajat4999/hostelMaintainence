@@ -4,13 +4,16 @@ const AssignWorkerModal = ({ isOpen, onClose, complaint, workers, onAssign }) =>
   const [selectedWorker, setSelectedWorker] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  if (!isOpen || !complaint) return null;
+
   // Filter workers to match the complaint category (Optional but good UX)
   const relevantWorkers = workers.filter(w => 
-    !complaint?.category || w.category.toLowerCase() === complaint.category.toLowerCase()
+    w.isAvailable !== false &&
+    (!complaint?.category || w.category.toLowerCase() === complaint.category.toLowerCase())
   );
   
   // If no relevant workers found, show all (fallback)
-  const workerList = relevantWorkers.length > 0 ? relevantWorkers : workers;
+  const workerList = relevantWorkers ;
 
   const handleSubmit = async (e) => {
     e.preventDefault();

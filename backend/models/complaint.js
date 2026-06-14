@@ -30,8 +30,12 @@ const complaintSchema=new mongoose.Schema({
   },
   status:{
     type:String,
-    enum:['pending','assigned','resolved'],
+    enum:['pending','assigned','resolved','rejected'],
     default:'pending'
+  },
+  rejectReason:{
+    type: String,
+    required:function() {return this.status==='rejected'}
   },
   image:{
     type:String  //url of image

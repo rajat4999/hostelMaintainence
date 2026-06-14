@@ -24,7 +24,7 @@ app.use(bodyParser.urlencoded({ limit: '100mb', extended: true }));
 
 
 app.get('/',(req,res)=>{
-  res.send("hello to hostel maintence app");
+  res.send("hello to samadhan Setu");
 });
 
 

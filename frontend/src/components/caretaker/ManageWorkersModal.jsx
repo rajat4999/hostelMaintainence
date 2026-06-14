@@ -5,17 +5,24 @@ import toast from "react-hot-toast";
 const TrashIcon = () => <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>;
 const EditIcon = () => <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>;
 const PlusIcon = () => <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" /></svg>;
+const SearchIcon = () => <svg className="w-5 h-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>;
 
-const ManageWorkersModal = ({ isOpen, onClose, workers, onAdd, onUpdate, onDelete }) => {
+// --- CHANGE 1: Added onToggleAvailability to props ---
+const ManageWorkersModal = ({ isOpen, onClose, workers, onAdd, onUpdate, onDelete, onToggleAvailability }) => {
   // 'list' or 'form'
   const [view, setView] = useState('list'); 
   const [editingId, setEditingId] = useState(null);
   
   const [formData, setFormData] = useState({ name: "", mobNo: "", category: "electrical", photoBase64: null, previewUrl: null });
+  const [searchQuery, setSearchQuery] = useState("");
 
   // Reset view when modal opens
   useEffect(() => {
-      if (isOpen) setView('list');
+      if (isOpen) {
+        setView('list');
+        setSearchQuery("");
+    }
+
   }, [isOpen]);
 
   const handleImageChange = (e) => {
@@ -50,6 +57,11 @@ const ManageWorkersModal = ({ isOpen, onClose, workers, onAdd, onUpdate, onDelet
       setView('form');
   };
 
+  const filteredWorkers = workers.filter(w => 
+      w.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
+      w.category.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
   if (!isOpen) return null;
 
   return (
@@ -67,39 +79,80 @@ const ManageWorkersModal = ({ isOpen, onClose, workers, onAdd, onUpdate, onDelet
         {/* --- LIST VIEW --- */}
         {view === 'list' && (
             <div className="flex flex-col h-full overflow-hidden">
-                <div className="p-4 border-b border-gray-100 flex justify-end shrink-0">
-                    <button onClick={openAddForm} className="flex items-center gap-2 bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg text-sm font-bold transition shadow-sm">
+                <div className="p-4 border-b border-gray-100 flex flex-col sm:flex-row gap-3 justify-between items-center shrink-0 bg-gray-50">
+                    {/* The Search Input */}
+                    <div className="relative w-full sm:w-1/2">
+                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                            <SearchIcon />
+                        </div>
+                        <input
+                            type="text"
+                            placeholder="Search by name or category..."
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 outline-none text-sm font-medium text-gray-700"
+                        />
+                    </div>
+                    
+                    <button onClick={openAddForm} className="flex items-center gap-2 bg-purple-600 hover:bg-purple-700 text-white px-4 py-2.5 rounded-lg text-sm font-bold transition shadow-sm w-full sm:w-auto justify-center">
                         <PlusIcon /> Add New Worker
                     </button>
                 </div>
                 
                 <div className="p-4 overflow-y-auto custom-scrollbar space-y-3 flex-1">
-                    {workers.length === 0 ? <p className="text-center text-gray-500 py-10">No workers found.</p> : 
-                    workers.map(w => (
-                        <div key={w._id} className="flex items-center justify-between p-3 bg-gray-50 border border-gray-200 rounded-xl hover:shadow-md transition">
+                    {filteredWorkers.length === 0 ? <p className="text-center text-gray-500 py-10">No workers found.</p> : 
+                    filteredWorkers.map(w => (
+                        // --- CHANGE 2: Upgraded worker card with toggle switch ---
+                        <div key={w._id} className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 bg-white border border-gray-200 rounded-xl hover:shadow-md transition gap-4">
+                            
+                            {/* Profile & Info */}
                             <div className="flex items-center gap-4">
                                 {w.image ? (
-                                    <img src={w.image} alt={w.name} className="w-12 h-12 rounded-full object-cover border-2 border-purple-200" />
+                                    <img src={w.image} alt={w.name} className="w-12 h-12 rounded-full object-cover border-2 border-purple-200 shrink-0" />
                                 ) : (
-                                    <div className="w-12 h-12 rounded-full bg-purple-100 text-purple-600 flex items-center justify-center font-bold text-lg border-2 border-purple-200">
+                                    <div className="w-12 h-12 rounded-full bg-purple-100 text-purple-600 flex items-center justify-center font-bold text-lg border-2 border-purple-200 shrink-0">
                                         {w.name.charAt(0)}
                                     </div>
                                 )}
                                 <div>
-                                    <h4 className="font-bold text-gray-800">{w.name}</h4>
-                                    <div className="flex items-center gap-2 mt-0.5">
+                                    <h4 className="font-bold text-gray-800 leading-none">{w.name}</h4>
+                                    <div className="flex items-center gap-2 mt-1.5">
                                         <span className="text-[10px] bg-purple-100 text-purple-700 px-1.5 py-0.5 rounded font-bold uppercase">{w.category}</span>
-                                        <span className="text-xs text-gray-600 font-mono">📞 {w.mobNo}</span>
+                                        <span className="text-xs text-gray-500 font-mono font-medium">📞 {w.mobNo}</span>
                                     </div>
+                                    {/* Show Active Task Count */}
+                                    <p className="text-[10px] text-gray-400 mt-1 uppercase font-bold tracking-wider">
+                                        {w.activeTaskCount || 0} Active Tasks
+                                    </p>
                                 </div>
                             </div>
-                            <div className="flex gap-2">
-                                <button onClick={() => openEditForm(w)} className="p-2 bg-blue-50 text-blue-600 hover:bg-blue-100 rounded-lg transition" title="Edit">
-                                    <EditIcon />
-                                </button>
-                                <button onClick={() => { if(window.confirm(`Delete ${w.name}?`)) onDelete(w._id); }} className="p-2 bg-red-50 text-red-600 hover:bg-red-100 rounded-lg transition" title="Delete">
-                                    <TrashIcon />
-                                </button>
+
+                            {/* Actions Container */}
+                            <div className="flex items-center gap-4 w-full sm:w-auto justify-end border-t sm:border-t-0 pt-3 sm:pt-0 border-gray-100 mt-2 sm:mt-0">
+                                
+                                {/* THE iOS TOGGLE SWITCH */}
+                                <label className="relative inline-flex items-center cursor-pointer mr-2">
+                                    <input 
+                                        type="checkbox" 
+                                        className="sr-only peer" 
+                                        checked={w.isAvailable !== false} // Defaults to true if undefined
+                                        onChange={() => onToggleAvailability(w._id, w.isAvailable !== false)}
+                                    />
+                                    <div className="w-9 h-5 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-green-500"></div>
+                                    <span className={`ml-2 text-[10px] font-bold uppercase w-12 ${w.isAvailable !== false ? 'text-green-600' : 'text-gray-400'}`}>
+                                        {w.isAvailable !== false ? 'Duty' : 'Off'}
+                                    </span>
+                                </label>
+
+                                {/* Existing Edit/Delete Buttons */}
+                                <div className="flex gap-2">
+                                    <button onClick={() => openEditForm(w)} className="p-2 bg-blue-50 text-blue-600 hover:bg-blue-100 rounded-lg transition" title="Edit">
+                                        <EditIcon />
+                                    </button>
+                                    <button onClick={() => { if(window.confirm(`Delete ${w.name}?`)) onDelete(w._id); }} className="p-2 bg-red-50 text-red-600 hover:bg-red-100 rounded-lg transition" title="Delete">
+                                        <TrashIcon />
+                                    </button>
+                                </div>
                             </div>
                         </div>
                     ))}

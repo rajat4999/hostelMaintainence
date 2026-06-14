@@ -65,9 +65,15 @@ export const useStudentData = () => {
   };
 
   const updateProfile = async (profileData) => {
-    await api.put("/student/profile/update", profileData);
-    toast.success("Profile Updated!");
-    fetchAllData();
+    try{
+        await api.put("/student/profile/update", profileData);
+        toast.success("Profile Updated!");
+        fetchAllData();
+    }catch (error) {
+      const errorMessage = error.response?.data?.message || error.response?.data?.error || "Failed to update profile";
+      toast.error(errorMessage);
+      throw error; 
+    }
   };
 
   const reopenComplaint = async (compId, reason) => {
@@ -76,8 +82,15 @@ export const useStudentData = () => {
     fetchAllData();
   };
 
+  const withdrawComplaint = async (compId) => {
+
+    await api.delete(`/student/${compId}/withdraw`);
+    toast.success("Complaint withdrawn successfully.");
+    fetchAllData(); 
+};
+
   return { 
     user, complaints, notices, stats, notifications, loading, 
-    logout, fileComplaint, updateProfile, reopenComplaint 
+    logout, fileComplaint, updateProfile, reopenComplaint ,withdrawComplaint
   };
 };

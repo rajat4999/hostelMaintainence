@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { useCaretakerData } from "../hooks/useCaretakerData";
 import NoticeModal from "../components/dashboard/NoticeModal";
+import StudentProfileModal from "../components/caretaker/StudentProfileModal";
 
 // Components
 import AssignWorkerModal from "../components/caretaker/AssignWorkerModal";
@@ -16,7 +17,7 @@ const LogoutIcon = () => <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24
 const CaretakerDashboard = () => {
   const { 
     user, complaints, workers, notices, stats, loading,
-    assignWorker, resolveComplaint, addWorker, postNotice, deleteNotice, logout,updateWorker, deleteWorker
+    assignWorker, resolveComplaint, addWorker, postNotice, deleteNotice, logout,updateWorker, deleteWorker,rejectComplaint,toggleWorkerAvailability
   } = useCaretakerData();
 
   const [activeModal, setActiveModal] = useState(null); // 'assign', 'addWorker', 'details'
@@ -24,6 +25,10 @@ const CaretakerDashboard = () => {
   const [selectedNotice, setSelectedNotice] = useState(null);
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [activeFilter, setActiveFilter] = useState('total');
+  const [selectedStudent, setSelectedStudent] = useState(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
   const userMenuRef = useRef();
   
   // Notice Form State
@@ -78,11 +83,41 @@ const CaretakerDashboard = () => {
       pending: complaints.filter(c => c.status === 'pending').length,
       assigned: complaints.filter(c => c.status === 'assigned').length,
       resolved: complaints.filter(c => c.status === 'resolved').length,
+    rejected: complaints.filter(c => c.status === 'rejected').length,
   };
 
   const filteredComplaints = complaints.filter(c => {
-      if (activeFilter === 'total') return true;
-      return c.status === activeFilter;
+      const matchesStatus = activeFilter === 'total' ? true : c.status === activeFilter;
+      const query = searchQuery.toLowerCase().trim();
+      const matchesSearch = query === '' || 
+          (c._id?.toString().toLowerCase().includes(query)) ||
+          (c.student?.room?.toLowerCase().includes(query)) || 
+          (c.student?.regNo?.toLowerCase().includes(query)) ||
+          (c.worker?.name?.toLowerCase().includes(query)) ||
+          (c.student?.name?.toLowerCase().includes(query));
+
+          let matchesDate = true;
+
+      if (startDate || endDate) {
+          // Setup the boundaries (Local timezone safe)
+          const start = startDate ? new Date(startDate).setHours(0, 0, 0, 0) : 0;
+          const end = endDate ? new Date(endDate).setHours(23, 59, 59, 999) : Infinity;
+
+          // Gather every single timestamp where an "action" occurred
+          const actionDates = [
+              c.createdAt,    // When it was filed
+              c.updatedAt,    // General updates/rejections
+              c.assignAt,     // When a worker was assigned
+              c.resolvedAt,   // When it was fixed
+              c.reopenedAt    // When the student reopened it
+          ]
+          .filter(Boolean) // This removes any dates that don't exist yet (like resolvedAt for pending tasks)
+          .map(dateStr => new Date(dateStr).getTime());
+
+          // If AT LEAST ONE of these actions happened in the date range, show the complaint!
+          matchesDate = actionDates.some(time => time >= start && time <= end);
+      }
+          return matchesStatus && matchesSearch && matchesDate;
   });
 
   return (
@@ -90,6 +125,7 @@ const CaretakerDashboard = () => {
       
       {/* --- NAVBAR --- */}
       <nav className="bg-white shadow px-8 py-4 flex justify-between items-center sticky top-0 z-20 border-b border-purple-100">
+        <h1 className="text-2xl font-extrabold text-purple-800 tracking-tight">Samadhan Setu</h1>
         <h1 className="text-2xl font-extrabold text-purple-800 tracking-tight">Caretaker Panel</h1>
         
         <div className="flex items-center gap-6">
@@ -145,7 +181,7 @@ const CaretakerDashboard = () => {
         
         {/* Stats */}
         {/* Stats / Filters */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 lg:gap-6">
             <StatCard 
                 title="Total" count={localStats.total} color="bg-gray-50 text-gray-800 border-gray-200" 
                 isActive={activeFilter === 'total'} onClick={() => setActiveFilter('total')} 
@@ -162,6 +198,10 @@ const CaretakerDashboard = () => {
                 title="Resolved" count={localStats.resolved} color="bg-green-50 text-green-800 border-green-200" 
                 isActive={activeFilter === 'resolved'} onClick={() => setActiveFilter('resolved')} 
             />
+            <StatCard
+                title="Rejected" count={localStats.rejected} color="bg-red-50 text-red-800 border-red-200" 
+                isActive={activeFilter === 'rejected'} onClick={() => setActiveFilter('rejected')} 
+            />
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -169,6 +209,63 @@ const CaretakerDashboard = () => {
             {/* LEFT: COMPLAINTS TABLE (2/3 Width) */}
             <div className="lg:col-span-2 space-y-4">
                 <h2 className="text-xl font-bold text-gray-800">Incoming Complaints</h2>
+                
+                {/* --- NEW: COMPLAINTS SECTION HEADER & FILTERS --- */}
+                <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-200 mb-6">
+                    <div className="flex flex-col md:flex-row gap-4 items-end">
+                        
+                        {/* Search Bar */}
+                        <div className="flex-1 w-full">
+                            <label className="text-[10px] font-bold text-gray-500 uppercase mb-1 block">Search</label>
+                            <div className="relative">
+                                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                    <svg className="h-4 w-4 text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                        <path fillRule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clipRule="evenodd" />
+                                    </svg>
+                                </div>
+                                <input
+                                    type="text"
+                                    placeholder="ID, room, student, worker..."
+                                    value={searchQuery}
+                                    onChange={(e) => setSearchQuery(e.target.value)}
+                                    className="w-full pl-9 pr-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-purple-500 outline-none transition"
+                                />
+                            </div>
+                        </div>
+
+                        {/* Date From */}
+                        <div className="w-full md:w-36">
+                            <label className="text-[10px] font-bold text-gray-500 uppercase mb-1 block">From</label>
+                            <input
+                                type="date"
+                                value={startDate}
+                                onChange={(e) => setStartDate(e.target.value)}
+                                className="w-full py-2 px-3 border border-gray-300 rounded-lg text-sm outline-none focus:ring-2 focus:ring-purple-500 transition text-gray-600"
+                            />
+                        </div>
+
+                        {/* Date To */}
+                        <div className="w-full md:w-36">
+                            <label className="text-[10px] font-bold text-gray-500 uppercase mb-1 block">To</label>
+                            <input
+                                type="date"
+                                value={endDate}
+                                onChange={(e) => setEndDate(e.target.value)}
+                                className="w-full py-2 px-3 border border-gray-300 rounded-lg text-sm outline-none focus:ring-2 focus:ring-purple-500 transition text-gray-600"
+                            />
+                        </div>
+
+                        {/* Reset Button */}
+                        {(startDate || endDate || searchQuery) && (
+                            <button 
+                                onClick={() => { setStartDate(''); setEndDate(''); setSearchQuery(''); }}
+                                className="px-4 py-2 bg-red-50 text-red-600 font-bold text-sm rounded-lg hover:bg-red-100 transition border border-red-100 shrink-0"
+                            >
+                                Clear
+                            </button>
+                        )}
+                    </div>
+                </div>
                 <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
                     {filteredComplaints.length === 0 ? <div className="p-10 text-center text-gray-500">No complaints found.</div> : (
                         <div className="overflow-x-auto">
@@ -191,7 +288,18 @@ const CaretakerDashboard = () => {
                                             <td className="p-4">
                                                 <p className="font-bold text-gray-800">{c.student?.room}</p>
                                                 <p className="text-gray-500 text-xs">{c.student?.name}</p>
+                                                <button 
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        setSelectedStudent(c.student);
+                                                    }}
+                                                    className="text-[11px] text-purple-600 font-bold hover:underline mt-1 flex items-center gap-1"
+                                                >
+                                                    View Profile
+                                                </button>
                                             </td>
+
+
                                             <td className="p-4">
                                                 <div className="flex items-center gap-2">
                                                     <span className="bg-gray-100 px-2 py-0.5 rounded text-xs font-bold capitalize">{c.category}</span>
@@ -203,6 +311,7 @@ const CaretakerDashboard = () => {
                                                 <span className={`px-2 py-1 rounded text-xs font-bold uppercase ${
                                                     c.status === 'resolved' ? 'bg-green-100 text-green-700' :
                                                     c.status === 'assigned' ? 'bg-blue-100 text-blue-700' : 
+                                                    c.status === 'rejected' ? 'bg-red-100 text-red-700' :
                                                     'bg-yellow-100 text-yellow-700'
                                                 }`}>
                                                     {c.status}
@@ -299,6 +408,7 @@ const CaretakerDashboard = () => {
          onAdd={addWorker} 
          onUpdate={updateWorker}
          onDelete={deleteWorker}
+         onToggleAvailability={toggleWorkerAvailability}
       />
 
       {/* 3. DETAILS MODAL */}
@@ -308,6 +418,7 @@ const CaretakerDashboard = () => {
          complaint={selectedComplaint}
          onAssign={openAssignFromDetails} // Clicking assign here opens the assign modal
          onResolve={(id) => { resolveComplaint(id); setActiveModal(null); }}
+         onReject={(id, reason) => { rejectComplaint(id, reason); setActiveModal(null); }}
       />
 
         {/* 4. NOTICE DETAILS MODAL */}
@@ -316,6 +427,13 @@ const CaretakerDashboard = () => {
          notice={selectedNotice} 
          onClose={() => setSelectedNotice(null)} 
          onDelete={deleteNotice}
+      />
+
+      {/* 5. STUDENT PROFILE MODAL (Add this here) */}
+      <StudentProfileModal 
+         isOpen={!!selectedStudent} 
+         onClose={() => setSelectedStudent(null)} 
+         student={selectedStudent} 
       />
 
     </div>

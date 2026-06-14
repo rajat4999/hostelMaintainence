@@ -11,6 +11,7 @@ router.use(jwtAuthMiddleware, checkStudent);
 router.post('/file', StudentController.fileComplaint);
 router.get('/view', StudentController.getStudentComplaints);
 router.patch('/:compId/reopen', StudentController.reopenComplaint);
+router.delete('/:compId/withdraw', StudentController.withdrawComplaint);
 
 // notices
 router.get('/notices', StudentController.viewNotices);

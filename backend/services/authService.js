@@ -41,7 +41,7 @@ const generateSignupOtp = async (email) => {
     );
 
     // 5. Send Email
-    const subject = "Verify Your Hostel App Account";
+    const subject = "Verify Your Samadhan Setu Account";
     const message = `Welcome!\n\nYour account verification code is: ${plainOtp}\n\nThis code will expire in 10 minutes.`;    
     await sendEmail(email, subject, message);
     return { message: "OTP sent successfully!" };
@@ -55,7 +55,7 @@ const registerUser = async (userData) => {
 
     // 1. Verify OTP
     const hashedOtp = crypto.createHash('sha256').update(userData.otp).digest('hex');
-    const validOtpRecord = await Otp.findOne({ 
+    const validOtpRecord = await Otp.findOneAndDelete({ 
         email: userData.email,
         otp: hashedOtp
     });
@@ -76,7 +76,7 @@ const registerUser = async (userData) => {
     const response = await user.save();
     
     // 4. Cleanup OTP & Generate Token
-    await Otp.deleteOne({ email: userData.email });
+    // await Otp.deleteOne({ email: userData.email });
     const payload = { 
         email: user.email,
         role: user.role,
@@ -87,7 +87,7 @@ const registerUser = async (userData) => {
 
     // 5. Async Welcome Email
     try{
-      const subject="welcome to hostel maintenance app";
+      const subject="welcome to Samadhan Setu";
       const to=user.email;
       const text=`Hi ${user.name},\n\nYour account has been successfully created.\n\nHostel: ${user.hostel}\nRoom: ${user.room}\n\nYou can now login and file complaints.\n\nRegards,\nHostel Admin`;
 
@@ -130,7 +130,7 @@ const forgotPassword = async (email) => {
     const otp = user.generateOTP();
     await user.save({ validateBeforeSave: false });
 
-    const subject = `Your Password Reset OTP - Hostel App`;
+    const subject = `Your Password Reset OTP -  Samadhan Setu`;
     const message = `Hello ${user.name},\n\nYour One-Time Password (OTP) to reset your password is:\n\n${otp}\n\nThis code is valid for 10 minutes. Please do not share it with anyone.`;
 
     try {
@@ -198,7 +198,7 @@ const resendOTP = async (email) => {
     const otp = user.generateOTP();
     await user.save({ validateBeforeSave: false });
 
-    const subject = `Your NEW Password Reset OTP - Hostel App`;
+    const subject = `Your NEW Password Reset OTP - Samadhan Setu`;
     const message = `Hello ${user.name},\n\nYou requested a new One-Time Password (OTP). Your new code is:\n\n${otp}\n\nThis code is valid for 10 minutes.`;
 
     try {

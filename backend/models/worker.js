@@ -2,7 +2,7 @@ const mongoose=require('mongoose');
 const workerSchema=new mongoose.Schema({
   name:{
     type:String,
-    requied:true
+    required:true
   },
   category:{
     type:String,
@@ -24,6 +24,14 @@ const workerSchema=new mongoose.Schema({
   hostel:{
     type:String,
     required:true
+  },
+  activeTaskCount: {
+    type: Number,
+    default: 0
+  },
+  isAvailable: {
+    type: Boolean,
+    default: true
   }
 });
 

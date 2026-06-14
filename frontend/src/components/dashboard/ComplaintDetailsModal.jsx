@@ -11,53 +11,51 @@ const ComplaintDetailsModal = ({ isOpen, onClose, complaint, onReopen }) => {
   if (!isOpen || !complaint) return null;
 
   // --- 1. STATUS TRACKER LOGIC ---
-  const steps = [
-    { id: "pending", label: "Complaint Filed", date: complaint.createdAt },
-    { 
-        id: "assigned", 
-        label: "Worker Assigned", 
-        date: complaint.assignAt, 
-        details: complaint.worker ? (
-            <div className="mt-3 bg-blue-50 p-3 rounded-xl border border-blue-100 flex items-center gap-3">
-                
-                {/* WORKER PHOTO OR FALLBACK */}
-                {complaint.worker.image ? (
-                    <img 
-                        src={complaint.worker.image} 
-                        alt="Worker Profile" 
-                        className="w-12 h-12 rounded-full object-cover border-2 border-blue-300 shadow-sm shrink-0" 
-                    />
-                ) : (
-                    <div className="w-12 h-12 rounded-full bg-blue-200 text-blue-600 flex items-center justify-center font-bold text-lg border-2 border-blue-300 shrink-0">
-                        {complaint.worker.name ? complaint.worker.name.charAt(0).toUpperCase() : 'W'}
-                    </div>
-                )}
-                
-                {/* WORKER INFO */}
-                <div>
-                    <p className="text-[10px] font-bold text-blue-500 uppercase tracking-wider mb-0.5">Assigned Worker</p>
-                    <h4 className="font-bold text-blue-900 text-sm leading-tight">{complaint.worker.name}</h4>
-                    <div className="flex items-center gap-2 mt-1">
-                        <span className="text-[10px] bg-blue-200 text-blue-800 px-1.5 py-0.5 rounded font-medium">
-                            {complaint.worker.category}
-                        </span>
-                        <span className="text-xs font-bold text-blue-800">
-                            📞 {complaint.worker.mobNo}
-                        </span>
-                    </div>
-                </div>
-
-            </div>
-        ) : null
-    },
-    { id: "resolved", label: "Issue Resolved", date: complaint.resolvedAt }
-  ];
-
-  // Determine current step index (0, 1, or 2)
+  // --- 1. STATUS TRACKER LOGIC ---
+  let steps = [{ id: "pending", label: "Complaint Filed", date: complaint.createdAt }];
   let currentStepIndex = 0;
-  if (complaint.status === 'assigned') currentStepIndex = 1;
-  if (complaint.status === 'resolved') currentStepIndex = 2;
 
+  if (complaint.status === 'rejected') {
+      // If rejected, override the timeline
+      steps.push({ 
+          id: "rejected", 
+          label: "Complaint Rejected", 
+          date: complaint.updatedAt 
+      });
+      currentStepIndex = 1;
+  } else {
+      // Standard Timeline
+      steps.push({ 
+          id: "assigned", 
+          label: "Worker Assigned", 
+          date: complaint.assignAt, 
+          details: complaint.worker ? (
+              <div className="mt-3 bg-blue-50 p-3 rounded-xl border border-blue-100 flex items-center gap-3">
+                  {/* WORKER PHOTO OR FALLBACK */}
+                  {complaint.worker.image ? (
+                      <img src={complaint.worker.image} alt="Worker Profile" className="w-12 h-12 rounded-full object-cover border-2 border-blue-300 shadow-sm shrink-0" />
+                  ) : (
+                      <div className="w-12 h-12 rounded-full bg-blue-200 text-blue-600 flex items-center justify-center font-bold text-lg border-2 border-blue-300 shrink-0">
+                          {complaint.worker.name ? complaint.worker.name.charAt(0).toUpperCase() : 'W'}
+                      </div>
+                  )}
+                  {/* WORKER INFO */}
+                  <div>
+                      <p className="text-[10px] font-bold text-blue-500 uppercase tracking-wider mb-0.5">Assigned Worker</p>
+                      <h4 className="font-bold text-blue-900 text-sm leading-tight">{complaint.worker.name}</h4>
+                      <div className="flex items-center gap-2 mt-1">
+                          <span className="text-[10px] bg-blue-200 text-blue-800 px-1.5 py-0.5 rounded font-medium">{complaint.worker.category}</span>
+                          <span className="text-xs font-bold text-blue-800">📞 {complaint.worker.mobNo}</span>
+                      </div>
+                  </div>
+              </div>
+          ) : null
+      });
+      steps.push({ id: "resolved", label: "Issue Resolved", date: complaint.resolvedAt });
+      
+      if (complaint.status === 'assigned') currentStepIndex = 1;
+      if (complaint.status === 'resolved') currentStepIndex = 2;
+  }
   // --- 2. REOPEN DEADLINE LOGIC ---
   let deadlineDate = null;
   let canReopen = false;
@@ -142,11 +140,36 @@ const ComplaintDetailsModal = ({ isOpen, onClose, complaint, onReopen }) => {
           <div className="bg-gray-50 p-5 rounded-xl border border-gray-200 space-y-4">
              <div className="flex justify-between items-start">
                  <div>
-                     <p className="text-xs font-bold text-gray-500 uppercase">Title</p>
-                     <p className="font-semibold text-gray-900 text-lg">{complaint.title}</p>
-                 </div>
+                    <p className="text-xs font-bold text-gray-500 uppercase">Title</p>
+                    <div className="flex items-center gap-3 mt-1">
+                        <p className="font-semibold text-gray-900 text-lg leading-none">{complaint.title}</p>
+                        
+                        {/* NEW: COMMON BADGE */}
+                        {complaint.isCommon && (
+                            <span className="bg-orange-100 text-orange-800 px-2 py-1 rounded text-[10px] font-extrabold border border-orange-200 tracking-wider shrink-0">
+                                COMMON AREA
+                            </span>
+                        )}
+                    </div>
+                    
+                    {/* NEW: Show who reported it */}
+                    {/* --- NEW: LOCATION & REPORTER BOX --- */}
+                    {complaint.isCommon && (
+                        <div className="mt-3 bg-white border border-gray-200 p-3 rounded-lg inline-block shadow-sm">
+                            <p className="text-sm font-bold text-gray-800">
+                                📍 {complaint.location || "Location Not Specified"}
+                            </p>
+                            <p className="text-xs text-gray-500 mt-1 pt-1 border-t border-gray-100">
+                                Reported by: <span className="font-bold text-gray-700">
+                                    {complaint.student ? `${complaint.student.name} (Room ${complaint.student.room})` : 'Former Student'}
+                                </span>
+                            </p>
+                        </div>
+                    )}
+                </div>
                  <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase ${
                     complaint.status === 'resolved' ? 'bg-green-100 text-green-700' : 
+                    complaint.status === 'rejected' ? 'bg-red-100 text-red-700' :
                     complaint.status === 'assigned' ? 'bg-blue-100 text-blue-700' :
                     'bg-yellow-100 text-yellow-700'
                  }`}>
@@ -166,6 +189,20 @@ const ComplaintDetailsModal = ({ isOpen, onClose, complaint, onReopen }) => {
                  </div>
              )}
           </div>
+
+          {/* --- NEW: REJECTION REASON SECTION --- */}
+          {complaint.status === 'rejected' && (
+              <div className="bg-red-50 p-5 rounded-xl border border-red-200 flex items-start gap-3">
+                  <svg className="w-6 h-6 text-red-600 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                  </svg>
+                  <div>
+                      <p className="text-xs font-bold text-red-800 uppercase tracking-wider mb-1">Reason for Rejection</p>
+                      {/* Note: using rejectedReason or rejectReason based on your DB schema fix */}
+                      <p className="text-red-700 font-medium">{complaint.rejectedReason || complaint.rejectReason || "No specific reason provided."}</p>
+                  </div>
+              </div>
+          )}
 
           {/* --- REOPEN SECTION --- */}
           {complaint.status === 'resolved' && (
