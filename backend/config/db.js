@@ -1,7 +1,9 @@
 const mongoose=require('mongoose');
 require('dotenv').config();
-const localMongo='mongodb://127.0.0.1:27017/HostelMaintainence';
-mongoose.connect(localMongo);
+const mongoUri=process.env.MONGO_URI ;
+const localMongo=process.env.LOCALMONGO;
+
+mongoose.connect(mongoUri);
 const db= mongoose.connection;
 
 db.on('connected',()=>{
