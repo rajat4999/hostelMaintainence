@@ -12,9 +12,9 @@ const generateSignupOtp = async (email) => {
 
 
 
-    if (!email.endsWith("@mnnit.ac.in")) {
-        throw { statusCode: 403, message: "You must use your official college email (@mnnit.ac.in)." };
-    }
+    // if (!email.endsWith("@mnnit.ac.in")) {
+    //     throw { statusCode: 403, message: "You must use your official college email (@mnnit.ac.in)." };
+    // }
 
 
     const existingUser = await Student.findOne({ email });
