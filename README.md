@@ -4,11 +4,11 @@ Samadhan Setu is a comprehensive MERN stack Hostel Maintenance and Complaint Man
 
 ## 🛠️ Tech Stack
 
-* **Frontend:** React.js, Tailwind CSS, Vite (Deployed on Vercel)
+* **Frontend:** React.js, Vite (Deployed on Vercel)
 * **Backend:** Node.js, Express.js (Deployed on Render)
 * **Database:** MongoDB Atlas (Mongoose)
-* **Authentication:** JWT & Bcrypt (with Advanced OTP Flows)
-* **Cloud Storage:** Cloudinary (Automated Asset Lifecycle)
+* **Authentication:** JWT & Bcrypt (with OTP Flows)
+* **Cloud Storage:** Cloudinary
 
 ---
 
@@ -16,7 +16,7 @@ Samadhan Setu is a comprehensive MERN stack Hostel Maintenance and Complaint Man
 
 ### 👨‍🎓 Student Module
 * **Secure Authentication:** OTP-based signup, password resets, and 10-minute token expiration with request cooldowns.
-* **Complaint Lifecycle:** File maintenance requests with high-res image proofs, track real-time status, or withdraw pending complaints.
+* **Complaint Lifecycle:** File maintenance requests with  image proofs, track  status, or withdraw pending complaints.
 * **Smart Re-opening:** Validation logic allows students to reopen a resolved complaint **within 10 days** of resolution.
 
 ### 👮‍♂️ Caretaker Module
@@ -29,7 +29,7 @@ Samadhan Setu is a comprehensive MERN stack Hostel Maintenance and Complaint Man
 * **Zero Storage Leaks:** The backend automatically triggers Cloudinary deletion APIs whenever a document (complaint, notice, or worker) is deleted or updated from MongoDB.
 
 ### 📧 Automated Email System
-Transactional emails are powered by `nodemailer` for:
+Transactional emails are powered by `Brevo` for:
 * OTP Verifications & Password Resets
 * Complaint Filed / Worker Assigned / Complaint Resolved
 
@@ -92,3 +92,6 @@ EMAIL_PASS=your_16_digit_gmail_app_password
 CLOUDINARY_CLOUD_NAME=your_cloud_name
 CLOUDINARY_API_KEY=your_api_key
 CLOUDINARY_API_SECRET=your_api_secret
+
+#Brevo
+BREVO_API_KEY=your_api_key
